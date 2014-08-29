@@ -3,7 +3,8 @@ T1
 
 Descrição:
 O primeiro trabalho prático da disciplina de Computação Gráfica I, que deverá ser feito em dupla ou individualmente, consiste em desenvolver uma aplicação 2D em OpenGL que cumpra as seguintes regras:
-1)   O jogo deve possuir objetivo, inicio e fim e controle de vitória e derrota
+
+1) O jogo deve possuir objetivo, inicio e fim e controle de vitória e derrota
 
 2) Possuir pelo menos 4 componentes geométricos diferentes;
 
