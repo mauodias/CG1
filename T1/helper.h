@@ -1,1 +1,0 @@
-../OpenGL Tutorial/OpenGL Tutorial/helper.h
