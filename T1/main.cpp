@@ -6,7 +6,7 @@
 //  Copyright (c) 2014 Maurício Dias. All rights reserved.
 //
 
-#include "helper.h"
+#include "ShapeDrawer.h"
 
 
 // Global variables
@@ -19,6 +19,8 @@ int windowHeight = 640;     // Windowed mode's height
 int windowPosX   = 50;      // Windowed mode's top-left corner x
 int windowPosY   = 50;      // Windowed mode's top-left corner y
 WALL walls[5];
+CIRCLE circle;
+COLOR blue = {.r = 0.0f, .g = 0.0f, .b = 1.0f};
 
 GLfloat ballRadius = 0.05f;   // Radius of the bouncing ball
 GLfloat ballX = -0.9f;        // Ball's center (x, y) position
@@ -59,8 +61,8 @@ void detectCollision(){
         ySpeed = -ySpeed;
     } else if (ballY < ballYMin) {
         ballY = ballYMin;
-        ySpeed *= -0.7;
-        xSpeed *= 0.9;
+        ySpeed = 0;
+        xSpeed *= 0.9f;
     }
     
     
@@ -74,8 +76,8 @@ void detectCollision(){
             if (ballTop > wallBottom) {
                 if ((ballLeft < wallHoleLeft || ballRight > wallHoleRight)) {
                     ballY = wallTop+ballRadius;
-                    ySpeed *= -0.7;
-                    xSpeed *= 0.9;
+                    ySpeed = 0;
+                    xSpeed *= 0.9f;
                     foundCollision = true;
                 }
             }
@@ -134,15 +136,20 @@ void display() {
     walls[4].holePosition = 5;
     walls[4].holeSize = 4;
     
-    buildWalls(walls[0]);
-    buildWalls(walls[1]);
-    buildWalls(walls[2]);
-    buildWalls(walls[3]);
-    buildWalls(walls[4]);
+    ShapeDrawer::buildWalls(walls[0]);
+    ShapeDrawer::buildWalls(walls[1]);
+    ShapeDrawer::buildWalls(walls[2]);
+    ShapeDrawer::buildWalls(walls[3]);
+    ShapeDrawer::buildWalls(walls[4]);
     
     glTranslatef(ballX, ballY, 0.0f);  // Translate to (xPos, yPos)
     // Use triangular segments to form a circle
-    glBegin(GL_TRIANGLE_FAN);
+    
+    circle.x = circle.y = 0;
+    circle.radius = ballRadius;
+    ShapeDrawer::drawCircle(circle, blue);
+    
+    /*glBegin(GL_TRIANGLE_FAN);
     glColor3f(0.0f, 0.0f, 1.0f);  // Blue
     glVertex2f(0.0f, 0.0f);       // Center of circle
     int numSegments = 100;
@@ -151,7 +158,7 @@ void display() {
         angle = i * 2.0f * PI / numSegments;  // 360 deg for all segments
         glVertex2f(cos(angle) * ballRadius, sin(angle) * ballRadius);
     }
-    glEnd();
+    glEnd();*/
     glLoadIdentity();              // Reset model-view matrix
     
     glutSwapBuffers();  // Swap front and back buffers (of double buffered mode)
