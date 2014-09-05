@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <GL/glut.h>
 //
 //  main.cpp
 //  OpenGL Tutorial
@@ -18,6 +20,7 @@ int windowWidth  = 320;     // Windowed mode's width
 int windowHeight = 640;     // Windowed mode's height
 int windowPosX   = 50;      // Windowed mode's top-left corner x
 int windowPosY   = 50;      // Windowed mode's top-left corner y
+int lvl = 0;
 WALL walls[5];
 CIRCLE circle;
 COLOR blue = {.r = 0.0f, .g = 0.0f, .b = 1.0f};
@@ -42,12 +45,12 @@ void initGL() {
 
 void detectCollision(){
     float ballTop, ballBottom, ballLeft, ballRight;
-    
+
     ballTop = ballY + ballRadius;
     ballBottom = ballY - ballRadius;
     ballLeft = ballX - ballRadius;
     ballRight = ballX + ballRadius;
-    
+
     // Check if the ball exceeds the edges
     if (ballX > ballXMax) {
         ballX = ballXMax;
@@ -57,15 +60,16 @@ void detectCollision(){
         xSpeed = -xSpeed;
     }
     if (ballY > ballYMax) {
-        ballY = ballYMax;
-        ySpeed = -ySpeed;
+        exit(0);
+        //ballY = ballYMax;
+        //ySpeed = -ySpeed;
     } else if (ballY < ballYMin) {
         ballY = ballYMin;
         ySpeed = 0;
         xSpeed *= 0.9f;
     }
-    
-    
+
+
     for (int i = 0; i < 5; i++) {
         bool foundCollision = false;
         float wallTop = (walls[i].level+1)*0.2f - 2.0f;
@@ -109,7 +113,7 @@ void detectCollision(){
                 }
             }
         }
-        
+
         if (foundCollision) {
             break;
         }
@@ -120,35 +124,35 @@ void detectCollision(){
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);  // Clear the color buffer
     glMatrixMode(GL_MODELVIEW);    // To operate on the model-view matrix
-    walls[0].level = 0;
+    walls[0].level = 0 + lvl;
     walls[0].holePosition = 2;
     walls[0].holeSize = 2;
-    walls[1].level = 4;
+    walls[1].level = 4 + lvl;
     walls[1].holePosition = 6;
     walls[1].holeSize = 3;
-    walls[2].level = 8;
+    walls[2].level = 8 + lvl;
     walls[2].holePosition = 4;
     walls[2].holeSize = 3;
-    walls[3].level = 12;
+    walls[3].level = 12 + lvl;
     walls[3].holePosition = 8;
     walls[3].holeSize = 2;
-    walls[4].level = 16;
+    walls[4].level = 16 + lvl;
     walls[4].holePosition = 5;
     walls[4].holeSize = 4;
-    
+
     ShapeDrawer::buildWalls(walls[0]);
     ShapeDrawer::buildWalls(walls[1]);
     ShapeDrawer::buildWalls(walls[2]);
     ShapeDrawer::buildWalls(walls[3]);
     ShapeDrawer::buildWalls(walls[4]);
-    
+
     glTranslatef(ballX, ballY, 0.0f);  // Translate to (xPos, yPos)
     // Use triangular segments to form a circle
-    
+
     circle.x = circle.y = 0;
     circle.radius = ballRadius;
     ShapeDrawer::drawCircle(circle, blue);
-    
+
     /*glBegin(GL_TRIANGLE_FAN);
     glColor3f(0.0f, 0.0f, 1.0f);  // Blue
     glVertex2f(0.0f, 0.0f);       // Center of circle
@@ -160,14 +164,14 @@ void display() {
     }
     glEnd();*/
     glLoadIdentity();              // Reset model-view matrix
-    
+
     glutSwapBuffers();  // Swap front and back buffers (of double buffered mode)
-    
+
     // Animation Control - compute the location for the next refresh
     ySpeed -=  GRAVITY/1000.0f/refreshMillis*METER;
     ballX += xSpeed;
     ballY += ySpeed;
-    
+
     // Check if the ball exceeds the edges
     /*if (ballX > ballXMax) {
         ballX = ballXMax;
@@ -185,9 +189,9 @@ void display() {
         xSpeed *= 0.9;
     }*/
 
-    
+
     detectCollision();
-    
+
 }
 
 /* Call back when the windows is re-sized */
@@ -195,10 +199,10 @@ void reshape(GLsizei width, GLsizei height) {
     // Compute aspect ratio of the new window
     if (height == 0) height = 1;                // To prevent divide by 0
     GLfloat aspect = (GLfloat)width / (GLfloat)height;
-    
+
     // Set the viewport to cover the new window
     glViewport(0, 0, width, height);
-    
+
     // Set the aspect ratio of the clipping area to match the viewport
     glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
     glLoadIdentity();             // Reset the projection matrix
@@ -238,6 +242,9 @@ void keyboard(unsigned char key, int x, int y) {
 /* Callback handler for special-key event */
 void specialKeys(int key, int x, int y) {
     switch (key) {
+        case GLUT_KEY_HOME: // Home: increase level height
+            lvl++;
+            break;
         case GLUT_KEY_F1:    // F1: Toggle between full-screen and windowed mode
             fullScreenMode = !fullScreenMode;         // Toggle state
             if (fullScreenMode) {                     // Full-screen mode
