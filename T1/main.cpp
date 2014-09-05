@@ -4,8 +4,8 @@
 //  main.cpp
 //  OpenGL Tutorial
 //
-//  Created by MaurÃ­cio Dias on 2014-08-20.
-//  Copyright (c) 2014 MaurÃ­cio Dias. All rights reserved.
+//  Created by Maurício Dias on 2014-08-20.
+//  Copyright (c) 2014 Maurício Dias. All rights reserved.
 //
 
 #include "ShapeDrawer.h"
@@ -21,6 +21,7 @@ int windowHeight = 640;     // Windowed mode's height
 int windowPosX   = 50;      // Windowed mode's top-left corner x
 int windowPosY   = 50;      // Windowed mode's top-left corner y
 int lvl = 0;
+bool canJump = true;
 WALL walls[5];
 CIRCLE circle;
 COLOR blue = {.r = 0.0f, .g = 0.0f, .b = 1.0f};
@@ -76,8 +77,10 @@ void detectCollision(){
         float wallBottom = wallTop - 0.2f;
         float wallHoleLeft = (walls[i].holePosition)*0.2f - 1.0f;
         float wallHoleRight = wallHoleLeft + walls[i].holeSize*0.2f;
+        canJump = false;
         if (ballBottom < wallTop) {
             if (ballTop > wallBottom) {
+                canJump = true;
                 if ((ballLeft < wallHoleLeft || ballRight > wallHoleRight)) {
                     ballY = wallTop+ballRadius;
                     ySpeed = 0;
@@ -267,7 +270,9 @@ void specialKeys(int key, int x, int y) {
             left = 10;
             break;
         case GLUT_KEY_UP:       // Up: increase y speed
-            ySpeed += /*200*METER/1000/15*/0.06f;
+            if (canJump){
+                ySpeed += /*200*METER/1000/15*/0.08f;
+            }
             break;
         case GLUT_KEY_DOWN:     // Down: decrease y speed
             ySpeed -= 0.06f;
