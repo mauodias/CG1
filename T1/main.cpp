@@ -22,7 +22,9 @@ int windowPosX   = 50;      // Windowed mode's top-left corner x
 int windowPosY   = 50;      // Windowed mode's top-left corner y
 int lvl = 0;
 bool canJump = true;
-WALL walls[5];
+bool needInitialDraw = true;
+WALL walls[300];
+int lastPosAvaiable = 0;    // Last position avaiable at walls
 CIRCLE circle;
 COLOR blue = {.r = 0.0f, .g = 0.0f, .b = 1.0f};
 
@@ -71,7 +73,7 @@ void detectCollision(){
     }
 
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < lastPosAvaiable; i++) {
         bool foundCollision = false;
         float wallTop = (walls[i].level+1)*0.2f - 2.0f;
         float wallBottom = wallTop - 0.2f;
@@ -123,31 +125,59 @@ void detectCollision(){
     }
 }
 
+void moveUp(){
+    for (int x = 0; x < lastPosAvaiable; x++)
+        walls[x].level++;
+}
+
+void generateRandomWall(int listPos){
+    int holeSize = 2 + (rand() % (int)(3 - 2 + 1));
+    int holePosition = 0 +(rand () % (int) ((10-holeSize) - 0 +1));
+    walls[listPos].holePosition = holePosition;
+    walls[listPos].holeSize = holeSize;
+    lastPosAvaiable++;
+}
+
+void generateInitialLevels(){
+    generateRandomWall(0);
+    generateRandomWall(1);
+    generateRandomWall(2);
+    generateRandomWall(3);
+    generateRandomWall(4);
+    walls[0].level = 0;
+    walls[1].level = 4;
+    walls[2].level = 8;
+    walls[3].level = 12;
+    walls[4].level = 16;
+}
 /* Callback handler for window re-paint event */
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);  // Clear the color buffer
     glMatrixMode(GL_MODELVIEW);    // To operate on the model-view matrix
-    walls[0].level = 0 + lvl;
-    walls[0].holePosition = 2;
-    walls[0].holeSize = 2;
-    walls[1].level = 4 + lvl;
-    walls[1].holePosition = 6;
-    walls[1].holeSize = 3;
-    walls[2].level = 8 + lvl;
-    walls[2].holePosition = 4;
-    walls[2].holeSize = 3;
-    walls[3].level = 12 + lvl;
-    walls[3].holePosition = 8;
-    walls[3].holeSize = 2;
-    walls[4].level = 16 + lvl;
-    walls[4].holePosition = 5;
-    walls[4].holeSize = 4;
 
-    ShapeDrawer::buildWalls(walls[0]);
-    ShapeDrawer::buildWalls(walls[1]);
-    ShapeDrawer::buildWalls(walls[2]);
-    ShapeDrawer::buildWalls(walls[3]);
-    ShapeDrawer::buildWalls(walls[4]);
+    // Draws only initial levels once
+    if (needInitialDraw){
+        generateInitialLevels();
+        needInitialDraw=false;
+    }
+
+    // Draws every designed wall
+    for (int x = 0; x < lastPosAvaiable; x++){
+        ShapeDrawer::buildWalls(walls[x]);
+    }
+
+    // Will detect if its needed to draw another lower level
+    bool existsAtZero, existsAtOne, existsAtTwo, existsAtThree = false;
+    for (int x = 0; x < lastPosAvaiable; x++){
+        if (walls[x].level==0) existsAtZero = true;
+        if (walls[x].level==1) existsAtOne = true;
+        if (walls[x].level==2) existsAtTwo = true;
+        if (walls[x].level==3) existsAtThree = true;
+        if (x == lastPosAvaiable - 1 and !existsAtZero and !existsAtOne and !existsAtTwo and !existsAtThree){
+            generateRandomWall(lastPosAvaiable);
+            walls[lastPosAvaiable].level = 0;
+        }
+    }
 
     glTranslatef(ballX, ballY, 0.0f);  // Translate to (xPos, yPos)
     // Use triangular segments to form a circle
@@ -246,7 +276,7 @@ void keyboard(unsigned char key, int x, int y) {
 void specialKeys(int key, int x, int y) {
     switch (key) {
         case GLUT_KEY_HOME: // Home: increase level height
-            lvl++;
+            moveUp();
             break;
         case GLUT_KEY_F1:    // F1: Toggle between full-screen and windowed mode
             fullScreenMode = !fullScreenMode;         // Toggle state
