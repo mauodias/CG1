@@ -1,5 +1,6 @@
-#include <stdlib.h>
 #include <GL/glut.h>
+#include <stdlib.h>
+#include <sys/time.h>
 //
 //  main.cpp
 //  OpenGL Tutorial
@@ -23,8 +24,11 @@ int windowPosY   = 50;      // Windowed mode's top-left corner y
 int lvl = 0;
 bool canJump = true;
 bool needInitialDraw = true;
+bool refreshTime = true;
+struct timeval firstTime, currentTime;
+int fallSpeed = 1000;       // Measured in milliseconds (default is 1000)
 WALL walls[300];
-int lastPosAvaiable = 0;    // Last position avaiable at walls
+int lastPosAvaiable = 0;    // Last position available at walls
 CIRCLE circle;
 COLOR blue = {.r = 0.0f, .g = 0.0f, .b = 1.0f};
 
@@ -150,11 +154,23 @@ void generateInitialLevels(){
     walls[3].level = 12;
     walls[4].level = 16;
 }
+
+/*  Function will calculate the difference between two timestamps in milliseconds */
+int diff_ms(timeval t1, timeval t2)
+{
+    return (((t1.tv_sec - t2.tv_sec) * 1000000) +
+            (t1.tv_usec - t2.tv_usec))/1000;
+}
 /* Callback handler for window re-paint event */
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);  // Clear the color buffer
     glMatrixMode(GL_MODELVIEW);    // To operate on the model-view matrix
 
+    // will keep doubling the speed
+    if (lastPosAvaiable==10) fallSpeed = 500;
+    if (lastPosAvaiable==20) fallSpeed = 250;
+    if (lastPosAvaiable==40) fallSpeed = 170;
+    if (lastPosAvaiable==80) fallSpeed = 85;
     // Draws only initial levels once
     if (needInitialDraw){
         generateInitialLevels();
@@ -177,6 +193,19 @@ void display() {
             generateRandomWall(lastPosAvaiable);
             walls[lastPosAvaiable].level = 0;
         }
+    }
+
+    if(refreshTime){
+        gettimeofday (&firstTime, NULL);
+        refreshTime = false;
+    }
+
+    // If last time the floor moved is greater than the fall speed
+    // means it needs to go up again
+    gettimeofday (&currentTime, NULL);
+    if(diff_ms(currentTime, firstTime) > fallSpeed){
+        moveUp();
+        refreshTime = true;
     }
 
     glTranslatef(ballX, ballY, 0.0f);  // Translate to (xPos, yPos)
