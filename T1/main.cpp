@@ -1,6 +1,14 @@
 #include <GL/glut.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <sys/time.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+//#include "stdafx.h"
+using namespace std;
+
 //
 //  main.cpp
 //  OpenGL Tutorial
@@ -8,12 +16,12 @@
 //  Created by Maurício Dias on 2014-08-20.
 //  Copyright (c) 2014 Maurício Dias. All rights reserved.
 //
-
 #include "ShapeDrawer.h"
+#include <mmsystem.h>
 
 
 // Global variables
-int up, down, left, right = 0;
+int up, down, Left, Right = 0;
 
 char title[] = "Full-Screen & Windowed Mode";  // Windowed mode's title
 char pressedKey [1];
@@ -22,16 +30,17 @@ int windowHeight = 640;     // Windowed mode's height
 int windowPosX   = 50;      // Windowed mode's top-left corner x
 int windowPosY   = 50;      // Windowed mode's top-left corner y
 int lvl = 0;
+int score= 0;
 bool canJump = true;
 bool needInitialDraw = true;
-bool refreshTime = true;
+bool refreshTime = false;
+bool started, stopped = false;
 struct timeval firstTime, currentTime;
-int fallSpeed = 1000;       // Measured in milliseconds (default is 1000)
 WALL walls[300];
-int lastPosAvaiable = 0;    // Last position available at walls
+int musicTempo[300];
+int lastPosAvaiable, prevLastPos = 0;    // Last position available at
 CIRCLE circle;
 COLOR blue = {.r = 0.0f, .g = 0.0f, .b = 1.0f};
-
 GLfloat ballRadius = 0.05f;   // Radius of the bouncing ball
 GLfloat ballX = -0.9f;        // Ball's center (x, y) position
 GLfloat ballY = 1.4f;
@@ -45,10 +54,22 @@ GLdouble clipAreaXLeft, clipAreaXRight, clipAreaYBottom, clipAreaYTop;
 
 bool fullScreenMode = false; // Full-screen or windowed mode?
 
-/* Initialize OpenGL Graphics */
+/* Initialize OpenGLstring Graphics */
 void initGL() {
     glClearColor(0.0, 0.0, 0.0, 1.0); // Set background (clear) color to black
 }
+
+void drawBitmapText(char *string,float x,float y,float z)
+{
+	char *c;
+	glRasterPos3f(x, y,z);
+
+	for (c=string; *c != '\0'; c++)
+	{
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+	}
+}
+
 
 void detectCollision(){
     float ballTop, ballBottom, ballLeft, ballRight;
@@ -64,10 +85,10 @@ void detectCollision(){
         xSpeed = -xSpeed;
     } else if (ballX < ballXMin) {
         ballX = ballXMin;
-        xSpeed = -xSpeed;
+        //xSpeed = -xSpeed;
     }
     if (ballY > ballYMax) {
-        exit(0);
+        if(score > 300) stopped = true;
         //ballY = ballYMax;
         //ySpeed = -ySpeed;
     } else if (ballY < ballYMin) {
@@ -161,17 +182,38 @@ int diff_ms(timeval t1, timeval t2)
     return (((t1.tv_sec - t2.tv_sec) * 1000000) +
             (t1.tv_usec - t2.tv_usec))/1000;
 }
+void loadMusicTempo(){
+    int x=0;
+    string line;
+    ifstream myfile ("musicTempo.txt");
+    if (myfile.is_open())
+    {
+        while ( getline (myfile,line) )
+        {
+            musicTempo[x] = atoi(line.c_str());
+            x++;
+        }
+        myfile.close();
+    }
+}
+void startLevel(){
+    loadMusicTempo();
+    PlaySound("song.wav", NULL, SND_ASYNC|SND_FILENAME|SND_LOOP);
+    refreshTime = true;
+    started = true;
+    stopped = false;
+    score = 0;
+    prevLastPos = lastPosAvaiable;
+}
+
 /* Callback handler for window re-paint event */
 void display() {
+
+    if(!stopped) score = ((lastPosAvaiable - prevLastPos)-1) * 100;
+
     glClear(GL_COLOR_BUFFER_BIT);  // Clear the color buffer
     glMatrixMode(GL_MODELVIEW);    // To operate on the model-view matrix
-
-    // will keep doubling the speed
-    if (lastPosAvaiable==10) fallSpeed = 500;
-    if (lastPosAvaiable==20) fallSpeed = 250;
-    if (lastPosAvaiable==40) fallSpeed = 170;
-    if (lastPosAvaiable==80) fallSpeed = 85;
-    // Draws only initial levels once
+        // Draws only initial levels once
     if (needInitialDraw){
         generateInitialLevels();
         needInitialDraw=false;
@@ -181,6 +223,31 @@ void display() {
     for (int x = 0; x < lastPosAvaiable; x++){
         ShapeDrawer::buildWalls(walls[x]);
     }
+
+    if(!started){
+        glColor3f(0,1,0);
+        drawBitmapText("Press 'Home' key to start",-0.6f,1,0);
+    }else {
+        string Result;          // string which will contain the result
+        std::ostringstream convert;   // stream used for the conversion
+        convert << score;      // insert the textual representation of 'Number' in the characters in the stream
+
+        Result = "Score: " + convert.str(); // set 'Result' to the contents of the stream
+        std::string str;
+        char * writable = new char[Result.size() + 1];
+        std::copy(Result.begin(), Result.end(), writable);
+        writable[Result.size()] = '\0';
+        glColor3f(0,1,0);
+        drawBitmapText(writable,-0.2f,1,0);
+        delete[] writable;
+        if(stopped){
+            glColor3f(0,1,0);
+            drawBitmapText("Game over my friend :(",-0.5f,0.85f,0);
+            glColor3f(0,1,0);
+            drawBitmapText("Press 'Home' key to restart",-0.6f,0.7f,0);
+        }
+    }
+
 
     // Will detect if its needed to draw another lower level
     bool existsAtZero, existsAtOne, existsAtTwo, existsAtThree = false;
@@ -203,10 +270,13 @@ void display() {
     // If last time the floor moved is greater than the fall speed
     // means it needs to go up again
     gettimeofday (&currentTime, NULL);
-    if(diff_ms(currentTime, firstTime) > fallSpeed){
-        moveUp();
-        refreshTime = true;
+    int diff = diff_ms(currentTime, firstTime);
+    for (int x = 0; x < 300; x++){
+        if(started && ((diff - 10) < musicTempo[x] && musicTempo[x] < (diff + 10))){
+            moveUp();
+        }
     }
+
 
     glTranslatef(ballX, ballY, 0.0f);  // Translate to (xPos, yPos)
     // Use triangular segments to form a circle
@@ -253,7 +323,6 @@ void display() {
 
 
     detectCollision();
-
 }
 
 /* Call back when the windows is re-sized */
@@ -305,7 +374,7 @@ void keyboard(unsigned char key, int x, int y) {
 void specialKeys(int key, int x, int y) {
     switch (key) {
         case GLUT_KEY_HOME: // Home: increase level height
-            moveUp();
+            startLevel();
             break;
         case GLUT_KEY_F1:    // F1: Toggle between full-screen and windowed mode
             fullScreenMode = !fullScreenMode;         // Toggle state
@@ -322,11 +391,11 @@ void specialKeys(int key, int x, int y) {
             break;
         case GLUT_KEY_RIGHT:    // Right: increase x speed
             xSpeed = 0.03f;
-            right = 10;
+            Right = 10;
             break;
         case GLUT_KEY_LEFT:     // Left: decrease x speed
             xSpeed = -0.03f;
-            left = 10;
+            Left = 10;
             break;
         case GLUT_KEY_UP:       // Up: increase y speed
             if (canJump){
