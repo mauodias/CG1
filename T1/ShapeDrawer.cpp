@@ -52,8 +52,9 @@ void ShapeDrawer::buildWalls(WALL wall)
     rect.left = -1.0f;
     rect.right = rect.left + 0.2f;
     red.r = 1.0f;
+    red.g = red.b = 0;
     white.r = white.g = white.b = 1.0f;
-    
+
     for (int i = 0; i < 10; i++) {
         if(i >= wall.holePosition && i < wall.holePosition+wall.holeSize)
         {
@@ -62,7 +63,7 @@ void ShapeDrawer::buildWalls(WALL wall)
             continue;
         }
         ShapeDrawer::drawRectangle(rect, red, white, RectangleType::BOTH);
-        
+
         rect.left = rect.right;
         rect.right += 0.2;
     }
