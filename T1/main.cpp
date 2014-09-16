@@ -31,6 +31,8 @@ int windowPosX   = 50;      // Windowed mode's top-left corner x
 int windowPosY   = 50;      // Windowed mode's top-left corner y
 int lvl = 0;
 int score= 0;
+int difficulty = 10;
+bool transportToNewLevel = false;
 bool canJump = true;
 bool needInitialDraw = true;
 bool refreshTime = false;
@@ -51,8 +53,6 @@ int refreshMillis =15;      // Refresh period in milliseconds
 
 // Projection clipping area
 GLdouble clipAreaXLeft, clipAreaXRight, clipAreaYBottom, clipAreaYTop;
-
-bool fullScreenMode = false; // Full-screen or windowed mode?
 
 /* Initialize OpenGLstring Graphics */
 void initGL() {
@@ -92,6 +92,7 @@ void detectCollision(){
         //ballY = ballYMax;
         //ySpeed = -ySpeed;
     } else if (ballY < ballYMin) {
+        transportToNewLevel = true;
         ballY = ballYMin;
         ySpeed = 0;
         xSpeed *= 0.9f;
@@ -105,7 +106,15 @@ void detectCollision(){
         float wallHoleLeft = (walls[i].holePosition)*0.2f - 1.0f;
         float wallHoleRight = wallHoleLeft + walls[i].holeSize*0.2f;
         canJump = false;
-        if (ballBottom < wallTop) {
+        if (transportToNewLevel){
+            wallTop = (walls[lastPosAvaiable-1].level+1)*0.2f - 2.0f;
+            ballY = wallTop+ballRadius;
+            ySpeed = 0;
+            xSpeed *= 0.9f;
+            foundCollision = true;
+            transportToNewLevel = false;
+        }
+        else if (ballBottom < wallTop) {
             if (ballTop > wallBottom) {
                 canJump = true;
                 if ((ballLeft < wallHoleLeft || ballRight > wallHoleRight)) {
@@ -208,8 +217,9 @@ void startLevel(){
 
 /* Callback handler for window re-paint event */
 void display() {
+    int multiplier = (lastPosAvaiable - prevLastPos)-1;
 
-    if(!stopped) score = ((lastPosAvaiable - prevLastPos)-1) * 100;
+    if(!stopped) score = multiplier * 100;
 
     glClear(GL_COLOR_BUFFER_BIT);  // Clear the color buffer
     glMatrixMode(GL_MODELVIEW);    // To operate on the model-view matrix
@@ -226,7 +236,13 @@ void display() {
 
     if(!started){
         glColor3f(0,1,0);
-        drawBitmapText("Press 'Home' key to start",-0.6f,1,0);
+        drawBitmapText("Select a difficulty to start:",-0.7f,1,0);
+        glColor3f(0,1,0);
+        drawBitmapText("'F1' for Easy",-0.4f,0.85f,0);
+        glColor3f(0,1,0);
+        drawBitmapText("'F2' for Normal",-0.4f,0.7f,0);
+        glColor3f(0,1,0);
+        drawBitmapText("'F3' for Hard",-0.4f,0.55f,0);
     }else {
         string Result;          // string which will contain the result
         std::ostringstream convert;   // stream used for the conversion
@@ -244,7 +260,13 @@ void display() {
             glColor3f(0,1,0);
             drawBitmapText("Game over my friend :(",-0.5f,0.85f,0);
             glColor3f(0,1,0);
-            drawBitmapText("Press 'Home' key to restart",-0.6f,0.7f,0);
+            drawBitmapText("Select a difficulty to restart:",-0.7f,0.7f,0);
+            glColor3f(0,1,0);
+            drawBitmapText("'F1' for Easy",-0.4f,0.55f,0);
+            glColor3f(0,1,0);
+            drawBitmapText("'F2' for Normal",-0.4f,0.4f,0);
+            glColor3f(0,1,0);
+            drawBitmapText("'F3' for Hard",-0.4f,0.25f,0);
         }
     }
 
@@ -272,7 +294,7 @@ void display() {
     gettimeofday (&currentTime, NULL);
     int diff = diff_ms(currentTime, firstTime);
     for (int x = 0; x < 300; x++){
-        if(started && ((diff - 10) < musicTempo[x] && musicTempo[x] < (diff + 10))){
+        if(started && ((diff - difficulty) < musicTempo[x] && musicTempo[x] < (diff + difficulty))){
             moveUp();
         }
     }
@@ -373,29 +395,29 @@ void keyboard(unsigned char key, int x, int y) {
 /* Callback handler for special-key event */
 void specialKeys(int key, int x, int y) {
     switch (key) {
-        case GLUT_KEY_HOME: // Home: increase level height
+        case GLUT_KEY_F1:
+            difficulty=10;
             startLevel();
             break;
-        case GLUT_KEY_F1:    // F1: Toggle between full-screen and windowed mode
-            fullScreenMode = !fullScreenMode;         // Toggle state
-            if (fullScreenMode) {                     // Full-screen mode
-                windowPosX   = glutGet(GLUT_WINDOW_X); // Save parameters for restoring later
-                windowPosY   = glutGet(GLUT_WINDOW_Y);
-                windowWidth  = glutGet(GLUT_WINDOW_WIDTH);
-                windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
-                glutFullScreen();                      // Switch into full screen
-            } else {                                         // Windowed mode
-                glutReshapeWindow(windowWidth, windowHeight); // Switch into windowed mode
-                glutPositionWindow(windowPosX, windowPosX);   // Position top-left corner
-            }
+        case GLUT_KEY_F2:
+            difficulty=30;
+            startLevel();
+            break;
+        case GLUT_KEY_F3:
+            difficulty=50;
+            startLevel();
             break;
         case GLUT_KEY_RIGHT:    // Right: increase x speed
-            xSpeed = 0.03f;
-            Right = 10;
+            if(!stopped){
+                xSpeed = 0.03f;
+                Right = 10;
+            }
             break;
         case GLUT_KEY_LEFT:     // Left: decrease x speed
-            xSpeed = -0.03f;
-            Left = 10;
+            if(!stopped){
+                xSpeed = -0.03f;
+                Left = 10;
+            }
             break;
         case GLUT_KEY_UP:       // Up: increase y speed
             if (canJump){
